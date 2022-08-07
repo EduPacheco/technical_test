@@ -3,21 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public enum GameState
-{
-    CREATE,
-    DEMOLISH,
-    CUSTOMIZE
-}
-
-public enum ModuleType
-{
-    WALL,
-    FLOOR,
-    DOOR,
-    WINDOW
-}
-
 public class UIManager : MonoBehaviour
 {
     #region SINGLETON
@@ -30,9 +15,6 @@ public class UIManager : MonoBehaviour
     #endregion
 
     #region VARIABLES
-
-    private GameState currentState;
-    public GameState CurrentState { get => currentState; }
 
     [SerializeField] private GameObject creationPanel;
 
@@ -50,40 +32,42 @@ public class UIManager : MonoBehaviour
 
     public void OnClick_CreationMode()
     {
-        currentState = GameState.CREATE;
-        MouseTarget.instance.UpdateMouseTargetFunctionality();
+        MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.CREATE);
 
         creationPanel.SetActive(true);
     }
 
     public void OnClick_DemolishMode()
     {
-        currentState = GameState.DEMOLISH;
-        MouseTarget.instance.UpdateMouseTargetFunctionality();
+        MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.DEMOLISH);
 
         creationPanel.SetActive(false);
     }
 
     public void OnClick_CustomizeMode()
     {
-        currentState = GameState.CUSTOMIZE;
-        MouseTarget.instance.UpdateMouseTargetFunctionality();
+        MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.CUSTOMIZE);
 
         creationPanel.SetActive(false);
     }
 
     public void OnClick_SelectWallToBuild()
     {
-        MouseTarget.instance.UpdatePrefabToBuild(wallPrefab, ModuleType.WALL);
+        MouseTarget.instance.UpdatePrefabToBuild(wallPrefab);
     }
 
     public void OnClick_SelectFloorToBuild()
     {
-        MouseTarget.instance.UpdatePrefabToBuild(floorPrefab, ModuleType.FLOOR);
+        MouseTarget.instance.UpdatePrefabToBuild(floorPrefab);
     }
 
     public void OnClick_SelectDoorToBuild()
     {
-        MouseTarget.instance.UpdatePrefabToBuild(doorPrefab, ModuleType.DOOR);
+        MouseTarget.instance.UpdatePrefabToBuild(doorPrefab);
+    }
+
+    public void OnClick_SelectWindowToBuild()
+    {
+        MouseTarget.instance.UpdatePrefabToBuild(windowPrefab);
     }
 }

@@ -4,6 +4,13 @@ using UnityEngine;
 /// <summary>
 /// References: https://youtu.be/0jTPKz3ga4w
 /// </summary>
+/// 
+public enum GameState
+{
+    CREATE,
+    DEMOLISH,
+    CUSTOMIZE
+}
 
 public class MouseTarget : MonoBehaviour
 {
@@ -26,15 +33,13 @@ public class MouseTarget : MonoBehaviour
 
     [SerializeField] private GameObject[] pointers;
     private GameObject currentPointer;
-    private GameObject prefabBuilding;
+    private GameObject prefabModule;
     private ModuleType currentModuleType;
+    private GameState currentBuildState;
 
 
     private bool isCreating = false;
     private ModuleBehavior isBeingEdited;
-
-    //private GameObject currentBuilding;
-
 
     private Vector3 previousPosition;
 
@@ -44,6 +49,7 @@ public class MouseTarget : MonoBehaviour
 
     private void Start()
     {
+        //Disables any active mouse pointer
         foreach (GameObject p in pointers)
         {
             if (p.activeSelf)
@@ -58,6 +64,13 @@ public class MouseTarget : MonoBehaviour
 
     private void Update()
     {
+        MouseRaycast();
+
+        RightClickForceClear();
+    }
+
+    private void MouseRaycast()
+    {
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue, inUseLayerMask))
         {
@@ -67,17 +80,13 @@ public class MouseTarget : MonoBehaviour
                 currentPointer.SetActive(true);
             }
 
-            //Snapping to grid Position without grid info
-            Vector3 t = hit.point;
+            //if (hit.transform.gameObject == null)
+            //    return;
 
-            if (hit.transform.gameObject == null)
-                return;
-
-            switch (UIManager.instance.CurrentState)
+            switch (currentBuildState)
             {
                 case GameState.CREATE:
-                    //Clear any module created on previous creation click
-                    CreationMode(t);
+                    CreationMode(hit);
                     break;
                 case GameState.DEMOLISH:
                     DemolishMode(hit);
@@ -94,10 +103,13 @@ public class MouseTarget : MonoBehaviour
                 currentPointer.SetActive(false);
             }
         }
+    }
 
+    private void RightClickForceClear()
+    {
         if (Input.GetMouseButtonDown(1))//Mouse Right Click
         {
-            switch (UIManager.instance.CurrentState)
+            switch (currentBuildState)
             {
                 case GameState.CREATE:
                     //Clear any module created on previous creation click
@@ -107,12 +119,15 @@ public class MouseTarget : MonoBehaviour
         }
     }
 
-    private void CreationMode(Vector3 target)
+    private void CreationMode(RaycastHit target)
     {
+        //Snapping to grid Position without grid info
+        Vector3 t = target.point;
+
         Vector3 snappingGrid = new Vector3(
-                Mathf.RoundToInt(target.x / nodeSize) * nodeSize,
+                Mathf.RoundToInt(t.x / nodeSize) * nodeSize,
                 0f,
-                Mathf.RoundToInt(target.z / nodeSize) * nodeSize);
+                Mathf.RoundToInt(t.z / nodeSize) * nodeSize);
 
         transform.position = snappingGrid;
 
@@ -130,14 +145,14 @@ public class MouseTarget : MonoBehaviour
 
                 if (Input.GetMouseButtonDown(0))//Mouse Left Click
                 {
-                    BuildModulesOnCreationBuffer();
+                    ToggleCreationMode();
                 }
                 break;
 
             case ModuleType.DOOR:
-
                 if (Input.GetMouseButtonDown(0))//Mouse Left Click
                 {
+                    ToggleCreationMode();
                     CreateModule(snappingGrid, true);
                 }
 
@@ -159,13 +174,11 @@ public class MouseTarget : MonoBehaviour
 
                 if (Input.GetMouseButtonUp(0))//Mouse Left Click
                 {
-                    BuildModulesOnCreationBuffer();
+                    ToggleCreationMode();
                 }
 
                 break;
         }
-
-
     }
 
     private void ClearCreationBuffer()
@@ -184,7 +197,7 @@ public class MouseTarget : MonoBehaviour
         return;
     }
 
-    private void BuildModulesOnCreationBuffer()
+    private void ToggleCreationMode()
     {
         if (isCreating)
         {
@@ -233,7 +246,7 @@ public class MouseTarget : MonoBehaviour
             isBeingEdited = targetModule;
         }
 
-        if (Input.GetMouseButton(0) || Input.GetMouseButton(1))//Mouse Left Click
+        if (Input.GetMouseButton(0) || Input.GetMouseButton(1))
         {
             if (isBeingEdited
                 && isBeingEdited != targetModule
@@ -247,7 +260,7 @@ public class MouseTarget : MonoBehaviour
             return;
         }
 
-        if (Input.GetMouseButtonUp(1) || Input.GetMouseButtonUp(1))
+        if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
         {
             isBeingEdited = null;
         }
@@ -259,10 +272,10 @@ public class MouseTarget : MonoBehaviour
     {
         Vector3 dir = (targetPos - previousPosition).normalized;
 
-        if (!prefabBuilding)
+        if (!prefabModule)
             return;
 
-        GameObject module = Instantiate(prefabBuilding, previousPosition, Quaternion.identity, null);
+        GameObject module = Instantiate(prefabModule, previousPosition, Quaternion.identity, null);
 
         if (!follow)
             module.transform.forward = dir;
@@ -270,16 +283,18 @@ public class MouseTarget : MonoBehaviour
         creationBuffer.Add(module);
     }
 
-    public void UpdateMouseTargetFunctionality()
+    public void UpdateMouseTargetFunctionality(GameState newState)
     {
+        currentBuildState = newState;
+
         //Change user mouse pointer
         if (currentPointer != null)
             currentPointer.SetActive(false);
-        currentPointer = pointers[(int)UIManager.instance.CurrentState];
+        currentPointer = pointers[(int)currentBuildState];
         currentPointer.SetActive(true);
 
         //Change Layer Mask Raycast Target
-        switch (UIManager.instance.CurrentState)
+        switch (currentBuildState)
         {
             case GameState.CREATE:
                 inUseLayerMask = groundLayer;
@@ -291,9 +306,10 @@ public class MouseTarget : MonoBehaviour
         }
     }
 
-    public void UpdatePrefabToBuild(GameObject p, ModuleType type)
+    public void UpdatePrefabToBuild(GameObject p)
     {
-        prefabBuilding = p;
-        currentModuleType = type;
+        prefabModule = p;
+
+        currentModuleType = prefabModule.GetComponent<ModuleBehavior>().MyType;
     }
 }
