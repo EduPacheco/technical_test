@@ -97,7 +97,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5750280392857276712
 Transform:
   m_ObjectHideFlags: 0
@@ -129,7 +129,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &8786086866151715018
 Transform:
   m_ObjectHideFlags: 0
@@ -521,7 +521,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &3495318443584784048
 Transform:
   m_ObjectHideFlags: 0
@@ -847,14 +847,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 029b2de9da05e974698122071e3a1cd9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  myType: 2
   defaultModule: {fileID: 2341104650701076184}
   visuals:
   - {fileID: 4669039127774768314}
   - {fileID: 613881531274542405}
   - {fileID: 686660289394337587}
-  canBeEdited: 1
+  myType: 2
   overlapError: {fileID: 8537194432476971614}
+  canBeEdited: 1
 --- !u!54 &4361478349517791148
 Rigidbody:
   m_ObjectHideFlags: 0

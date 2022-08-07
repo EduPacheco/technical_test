@@ -1,23 +1,25 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+
+/// <summary>
+/// User Interface Manager, has On click methods called from the buttons in the UI,
+/// comunicates with the Mouse Script to let it now which mode the game currently is, 
+/// (Create, MOve, Customize, Demolish) and which module the player desires to build
+/// </summary>
+
 
 public class UIManager : MonoBehaviour
 {
-    #region SINGLETON
-    public static UIManager instance;
-
-    private void Awake()
-    {
-        instance = this;
-    }
-    #endregion
-
     #region VARIABLES
 
+    /// <summary>
+    /// UI Panel where are the module buttons choice
+    /// </summary>
     [SerializeField] private GameObject creationPanel;
 
+    /// <summary>
+    /// Possible modules the user can build
+    /// </summary>
+    [Header("Modules")]
     [SerializeField] private GameObject wallPrefab;
     [SerializeField] private GameObject floorPrefab;
     [SerializeField] private GameObject doorPrefab;
@@ -30,6 +32,7 @@ public class UIManager : MonoBehaviour
         OnClick_CreationMode();
     }
 
+    #region OnClick_ButtonMethods
     public void OnClick_CreationMode()
     {
         MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.CREATE);
@@ -77,4 +80,5 @@ public class UIManager : MonoBehaviour
     {
         MouseTarget.instance.UpdatePrefabToBuild(windowPrefab);
     }
+    #endregion
 }
