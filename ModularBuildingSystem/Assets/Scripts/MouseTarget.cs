@@ -24,9 +24,10 @@ public class MouseTarget : MonoBehaviour
 
     private LayerMask inUseLayerMask;
 
-    private GameObject prefabBuilding;
     [SerializeField] private GameObject[] pointers;
     private GameObject currentPointer;
+    private GameObject prefabBuilding;
+    private ModuleType currentModuleType;
 
 
     private bool isCreating = false;
@@ -69,6 +70,9 @@ public class MouseTarget : MonoBehaviour
             //Snapping to grid Position without grid info
             Vector3 t = hit.point;
 
+            if (hit.transform.gameObject == null)
+                return;
+
             switch (UIManager.instance.CurrentState)
             {
                 case GameState.CREATE:
@@ -106,53 +110,93 @@ public class MouseTarget : MonoBehaviour
     private void CreationMode(Vector3 target)
     {
         Vector3 snappingGrid = new Vector3(
-                    Mathf.RoundToInt(target.x / nodeSize) * nodeSize,
-                    0f,
-                    Mathf.RoundToInt(target.z / nodeSize) * nodeSize);
+                Mathf.RoundToInt(target.x / nodeSize) * nodeSize,
+                0f,
+                Mathf.RoundToInt(target.z / nodeSize) * nodeSize);
 
         transform.position = snappingGrid;
 
-        if (snappingGrid != previousPosition)
+        switch (currentModuleType)
         {
-            if (isCreating)
-                CreateModule(snappingGrid);
-
-            previousPosition = snappingGrid;
-        }
-
-        if (Input.GetMouseButtonDown(0))//Mouse Left Click
-        {
-            if (isCreating)
-            {
-                foreach (GameObject g in creationBuffer)
+            case ModuleType.WALL:
+            case ModuleType.FLOOR:
+                if (snappingGrid != previousPosition)
                 {
-                    if (g != null)
-                        g.GetComponent<ModuleBehavior>().Build();
+                    if (isCreating)
+                        CreateModule(snappingGrid, false);
+
+                    previousPosition = snappingGrid;
                 }
 
-                creationBuffer.Clear();
-            }
+                if (Input.GetMouseButtonDown(0))//Mouse Left Click
+                {
+                    BuildModulesOnCreationBuffer();
+                }
+                break;
 
-            isCreating = !isCreating;
+            case ModuleType.DOOR:
+
+                if (Input.GetMouseButtonDown(0))//Mouse Left Click
+                {
+                    CreateModule(snappingGrid, true);
+                }
+
+                if (Input.GetMouseButton(0))
+                {
+                    if (creationBuffer[0] == null)
+                    { 
+                        ClearCreationBuffer();
+                        return;
+                    }
+
+                    creationBuffer[0].transform.position = transform.position;
+
+                    if (Input.GetAxis("Mouse ScrollWheel") > 0f)
+                        creationBuffer[0].transform.Rotate(0f, 90f, 0f);
+                    else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
+                        creationBuffer[0].transform.Rotate(0f, -90f, 0f);
+                }
+
+                if (Input.GetMouseButtonUp(0))//Mouse Left Click
+                {
+                    BuildModulesOnCreationBuffer();
+                }
+
+                break;
         }
+
+
     }
 
     private void ClearCreationBuffer()
     {
         if (isCreating)
         {
-            if (creationBuffer.Count != 0)
+            foreach (GameObject g in creationBuffer)
             {
-                foreach (GameObject g in creationBuffer)
-                {
-                    Destroy(g);
-                }
-
-                creationBuffer.Clear();
+                Destroy(g);
             }
 
-            isCreating = false;
+            creationBuffer.Clear();
         }
+
+        isCreating = false;
+        return;
+    }
+
+    private void BuildModulesOnCreationBuffer()
+    {
+        if (isCreating)
+        {
+            foreach (GameObject g in creationBuffer)
+            {
+                if (g != null)
+                    g.GetComponent<ModuleBehavior>().Build();
+            }
+
+            creationBuffer.Clear();
+        }
+        isCreating = !isCreating;
     }
 
     private void DemolishMode(RaycastHit target)
@@ -211,7 +255,7 @@ public class MouseTarget : MonoBehaviour
 
     }
 
-    private void CreateModule(Vector3 targetPos)
+    private void CreateModule(Vector3 targetPos, bool follow)
     {
         Vector3 dir = (targetPos - previousPosition).normalized;
 
@@ -220,7 +264,8 @@ public class MouseTarget : MonoBehaviour
 
         GameObject module = Instantiate(prefabBuilding, previousPosition, Quaternion.identity, null);
 
-        module.transform.forward = dir;
+        if (!follow)
+            module.transform.forward = dir;
 
         creationBuffer.Add(module);
     }
@@ -246,8 +291,9 @@ public class MouseTarget : MonoBehaviour
         }
     }
 
-    public void UpdatePrefabToBuild(GameObject p)
+    public void UpdatePrefabToBuild(GameObject p, ModuleType type)
     {
         prefabBuilding = p;
+        currentModuleType = type;
     }
 }

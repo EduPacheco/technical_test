@@ -10,6 +10,14 @@ public enum GameState
     CUSTOMIZE
 }
 
+public enum ModuleType
+{
+    WALL,
+    FLOOR,
+    DOOR,
+    WINDOW
+}
+
 public class UIManager : MonoBehaviour
 {
     #region SINGLETON
@@ -66,11 +74,16 @@ public class UIManager : MonoBehaviour
 
     public void OnClick_SelectWallToBuild()
     {
-        MouseTarget.instance.UpdatePrefabToBuild(wallPrefab);
+        MouseTarget.instance.UpdatePrefabToBuild(wallPrefab, ModuleType.WALL);
     }
 
     public void OnClick_SelectFloorToBuild()
     {
-        MouseTarget.instance.UpdatePrefabToBuild(floorPrefab);
+        MouseTarget.instance.UpdatePrefabToBuild(floorPrefab, ModuleType.FLOOR);
+    }
+
+    public void OnClick_SelectDoorToBuild()
+    {
+        MouseTarget.instance.UpdatePrefabToBuild(doorPrefab, ModuleType.DOOR);
     }
 }

@@ -40,9 +40,6 @@ public class ModuleBehavior : MonoBehaviour
         }
     }
 
-
-
-
     public void ChangeVisuals(bool intake)
     {
         if (defaultModule.activeSelf)
