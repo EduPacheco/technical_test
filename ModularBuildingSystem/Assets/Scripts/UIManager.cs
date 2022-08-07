@@ -37,6 +37,13 @@ public class UIManager : MonoBehaviour
         creationPanel.SetActive(true);
     }
 
+    public void OnClick_MoveMode()
+    {
+        MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.MOVE);
+
+        creationPanel.SetActive(false);
+    }
+
     public void OnClick_DemolishMode()
     {
         MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.DEMOLISH);

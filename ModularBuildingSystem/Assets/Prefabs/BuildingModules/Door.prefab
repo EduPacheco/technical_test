@@ -853,6 +853,7 @@ MonoBehaviour:
   - {fileID: 4669039127774768314}
   - {fileID: 613881531274542405}
   - {fileID: 686660289394337587}
+  canBeEdited: 1
   overlapError: {fileID: 8537194432476971614}
 --- !u!54 &4361478349517791148
 Rigidbody:

@@ -8,8 +8,9 @@ using UnityEngine;
 public enum GameState
 {
     CREATE,
-    DEMOLISH,
-    CUSTOMIZE
+    MOVE,
+    CUSTOMIZE,
+    DEMOLISH
 }
 
 public class MouseTarget : MonoBehaviour
@@ -40,6 +41,8 @@ public class MouseTarget : MonoBehaviour
 
     private bool isCreating = false;
     private ModuleBehavior isBeingEdited;
+    private Vector3 editReturnPos;
+    private Quaternion editReturnRot;
 
     private Vector3 previousPosition;
 
@@ -88,11 +91,14 @@ public class MouseTarget : MonoBehaviour
                 case GameState.CREATE:
                     CreationMode(hit);
                     break;
-                case GameState.DEMOLISH:
-                    DemolishMode(hit);
+                case GameState.MOVE:
+                    MoveModulesMode(hit);
                     break;
                 case GameState.CUSTOMIZE:
                     CustomizeMode(hit);
+                    break;
+                case GameState.DEMOLISH:
+                    DemolishMode(hit);
                     break;
             }
         }
@@ -150,6 +156,7 @@ public class MouseTarget : MonoBehaviour
                 break;
 
             case ModuleType.DOOR:
+            case ModuleType.WINDOW:
                 if (Input.GetMouseButtonDown(0))//Mouse Left Click
                 {
                     ToggleCreationMode();
@@ -212,15 +219,76 @@ public class MouseTarget : MonoBehaviour
         isCreating = !isCreating;
     }
 
-    private void DemolishMode(RaycastHit target)
+    private void MoveModulesMode(RaycastHit target)
     {
-        transform.position = target.point;
+        if (isBeingEdited != null)
+        {
+            Vector3 t = target.point;
+
+            Vector3 snappingGrid = new Vector3(
+                    Mathf.RoundToInt(t.x / nodeSize) * nodeSize,
+                    0f,
+                    Mathf.RoundToInt(t.z / nodeSize) * nodeSize);
+
+            transform.position = snappingGrid;
+
+            if (inUseLayerMask != groundLayer)
+                inUseLayerMask = groundLayer;
+        }
+        else
+        {
+            transform.position = target.point;
+
+            if (inUseLayerMask != physicsLayer)
+                inUseLayerMask = physicsLayer;
+        }
+
+        ModuleBehavior targetModule = target.transform.gameObject.GetComponent<ModuleBehavior>();
 
         if (Input.GetMouseButtonDown(0))//Mouse Left Click
         {
-            ModuleBehavior targetModule = target.transform.gameObject.GetComponent<ModuleBehavior>();
-            if (targetModule)
-                Destroy(targetModule.gameObject);
+            if (!targetModule.CanBeEdited || !targetModule)
+                return;
+
+            isBeingEdited = targetModule;
+            //isBeingEdited.Editing(true);
+            editReturnPos = isBeingEdited.transform.position;
+            editReturnRot = isBeingEdited.transform.rotation;
+        }
+
+        if (Input.GetMouseButton(0))
+        {
+            //if (isBeingEdited == null)
+            //    return;
+
+            isBeingEdited.transform.position = transform.position;
+
+            if (Input.GetAxis("Mouse ScrollWheel") > 0f)
+                isBeingEdited.transform.Rotate(0f, 90f, 0f);
+            else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
+                isBeingEdited.transform.Rotate(0f, -90f, 0f);
+        }
+
+        if (Input.GetMouseButtonDown(1))//Mouse Right Click
+        {
+            isBeingEdited.transform.position = editReturnPos;
+            isBeingEdited.transform.rotation = editReturnRot;
+            //targetModule.Editing(false);
+            isBeingEdited = null;
+
+            return;
+        }
+
+        if (Input.GetMouseButtonUp(0))
+        {
+            if(isBeingEdited.BuildingOverlap)
+            {
+                isBeingEdited.transform.position = editReturnPos;
+                isBeingEdited.transform.rotation = editReturnRot;
+            }
+
+            //targetModule.Editing(false);
+            isBeingEdited = null;
         }
     }
 
@@ -264,8 +332,18 @@ public class MouseTarget : MonoBehaviour
         {
             isBeingEdited = null;
         }
+    }
 
+    private void DemolishMode(RaycastHit target)
+    {
+        transform.position = target.point;
 
+        if (Input.GetMouseButtonDown(0))//Mouse Left Click
+        {
+            ModuleBehavior targetModule = target.transform.gameObject.GetComponent<ModuleBehavior>();
+            if (targetModule)
+                Destroy(targetModule.gameObject);
+        }
     }
 
     private void CreateModule(Vector3 targetPos, bool follow)
@@ -297,19 +375,30 @@ public class MouseTarget : MonoBehaviour
         switch (currentBuildState)
         {
             case GameState.CREATE:
+                MouseReset();
                 inUseLayerMask = groundLayer;
                 break;
+            case GameState.MOVE:
             case GameState.DEMOLISH:
             case GameState.CUSTOMIZE:
+                MouseReset();
+                UpdatePrefabToBuild(null);
                 inUseLayerMask = physicsLayer;
                 break;
         }
+    }
+
+    private void MouseReset()
+    {
+        isCreating = false;
+        isBeingEdited = null;
     }
 
     public void UpdatePrefabToBuild(GameObject p)
     {
         prefabModule = p;
 
-        currentModuleType = prefabModule.GetComponent<ModuleBehavior>().MyType;
+        if(p != null)
+            currentModuleType = prefabModule.GetComponent<ModuleBehavior>().MyType;
     }
 }

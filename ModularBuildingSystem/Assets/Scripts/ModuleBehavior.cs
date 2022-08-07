@@ -28,6 +28,8 @@ public class ModuleBehavior : MonoBehaviour
     private bool buildingOverlap = false;
     public bool BuildingOverlap { get => buildingOverlap; }
 
+    [SerializeField] private bool canBeEdited;
+    public bool CanBeEdited { get => canBeEdited; }
     [SerializeField] private GameObject overlapError;
 
     private bool isBuilt = false;
@@ -36,8 +38,9 @@ public class ModuleBehavior : MonoBehaviour
 
     private void Start()
     {
-        if (overlapError.activeSelf)
-            overlapError.SetActive(false);
+        if(canBeEdited)
+            if (overlapError != null && overlapError.activeSelf)
+                overlapError.SetActive(false);
     }
 
     public void Build()
@@ -46,6 +49,11 @@ public class ModuleBehavior : MonoBehaviour
             Destroy(gameObject);
 
         isBuilt = true;
+    }
+
+    public void Editing(bool e)
+    {
+        isBuilt = !e;
     }
 
     public void ChangeVisuals(ModuleBehavior intakeToMimic)
@@ -88,9 +96,7 @@ public class ModuleBehavior : MonoBehaviour
 
     private void OnCollisionEnter(Collision other)
     {
-        if ((this.gameObject.CompareTag("Door") || this.gameObject.CompareTag("Window"))
-            && other.gameObject.CompareTag(gameObject.tag)
-            && !isBuilt)
+        if (CanOverlap(other))
         {
             buildingOverlap = true;
             overlapError.SetActive(buildingOverlap);
@@ -105,9 +111,7 @@ public class ModuleBehavior : MonoBehaviour
 
     private void OnCollisionStay(Collision other)
     {
-        if ((this.gameObject.CompareTag("Door") || this.gameObject.CompareTag("Window")) 
-            && other.gameObject.CompareTag(gameObject.tag)
-            && !isBuilt)
+        if (CanOverlap(other))
         {
             if(!buildingOverlap)
                 buildingOverlap = true;
@@ -117,12 +121,17 @@ public class ModuleBehavior : MonoBehaviour
 
     private void OnCollisionExit(Collision other)
     {
-        if (other.gameObject.CompareTag(gameObject.tag) 
-            && (this.gameObject.CompareTag("Door") || this.gameObject.CompareTag("Window"))
-            && !isBuilt)
+        if (CanOverlap(other))
         {
             buildingOverlap = false;
             overlapError.SetActive(buildingOverlap);
         }
+    }
+
+    private bool CanOverlap(Collision other)
+    {
+        return (this.gameObject.CompareTag("Door") || this.gameObject.CompareTag("Window"))
+            && (other.gameObject.CompareTag("Door") || other.gameObject.CompareTag("Window"))
+            && !isBuilt;
     }
 }
