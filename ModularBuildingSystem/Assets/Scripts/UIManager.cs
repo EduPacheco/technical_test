@@ -26,6 +26,8 @@ public class UIManager : MonoBehaviour
     private GameState currentState;
     public GameState CurrentState { get => currentState; }
 
+    [SerializeField] private GameObject creationPanel;
+
     [SerializeField] private GameObject wallPrefab;
     [SerializeField] private GameObject floorPrefab;
     [SerializeField] private GameObject doorPrefab;
@@ -42,18 +44,24 @@ public class UIManager : MonoBehaviour
     {
         currentState = GameState.CREATE;
         MouseTarget.instance.UpdateMouseTargetFunctionality();
+
+        creationPanel.SetActive(true);
     }
 
     public void OnClick_DemolishMode()
     {
         currentState = GameState.DEMOLISH;
         MouseTarget.instance.UpdateMouseTargetFunctionality();
+
+        creationPanel.SetActive(false);
     }
 
     public void OnClick_CustomizeMode()
     {
         currentState = GameState.CUSTOMIZE;
         MouseTarget.instance.UpdateMouseTargetFunctionality();
+
+        creationPanel.SetActive(false);
     }
 
     public void OnClick_SelectWallToBuild()

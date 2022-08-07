@@ -30,6 +30,7 @@ public class MouseTarget : MonoBehaviour
 
 
     private bool isCreating = false;
+    private ModuleBehavior isBeingEdited;
 
     //private GameObject currentBuilding;
 
@@ -80,7 +81,7 @@ public class MouseTarget : MonoBehaviour
                 case GameState.CUSTOMIZE:
                     CustomizeMode(hit);
                     break;
-            }      
+            }
         }
         else
         {
@@ -161,7 +162,7 @@ public class MouseTarget : MonoBehaviour
         if (Input.GetMouseButtonDown(0))//Mouse Left Click
         {
             ModuleBehavior targetModule = target.transform.gameObject.GetComponent<ModuleBehavior>();
-            if(targetModule)
+            if (targetModule)
                 Destroy(targetModule.gameObject);
         }
     }
@@ -175,16 +176,48 @@ public class MouseTarget : MonoBehaviour
         if (!targetModule)
             return;
 
+
         if (Input.GetMouseButtonDown(0))//Mouse Left Click
+        {
             targetModule.ChangeVisuals(true);
-        if (Input.GetMouseButton(0))//Mouse Left Click
+            isBeingEdited = targetModule;
+        }
+
         if (Input.GetMouseButtonDown(1))//Mouse Right Click
+        {
             targetModule.ChangeVisuals(false);
+            isBeingEdited = targetModule;
+        }
+
+        if (Input.GetMouseButton(0) || Input.GetMouseButton(1))//Mouse Left Click
+        {
+            if (isBeingEdited
+                && isBeingEdited != targetModule
+                && isBeingEdited.tag == targetModule.transform.tag)
+            {
+                targetModule.ChangeVisuals(isBeingEdited);
+            }
+
+            isBeingEdited = targetModule;
+
+            return;
+        }
+
+        if (Input.GetMouseButtonUp(1) || Input.GetMouseButtonUp(1))
+        {
+            isBeingEdited = null;
+        }
+
+
     }
 
     private void CreateModule(Vector3 targetPos)
     {
         Vector3 dir = (targetPos - previousPosition).normalized;
+
+        if (!prefabBuilding)
+            return;
+
         GameObject module = Instantiate(prefabBuilding, previousPosition, Quaternion.identity, null);
 
         module.transform.forward = dir;
@@ -195,7 +228,7 @@ public class MouseTarget : MonoBehaviour
     public void UpdateMouseTargetFunctionality()
     {
         //Change user mouse pointer
-        if(currentPointer != null)
+        if (currentPointer != null)
             currentPointer.SetActive(false);
         currentPointer = pointers[(int)UIManager.instance.CurrentState];
         currentPointer.SetActive(true);

@@ -7,8 +7,10 @@ public class ModuleBehavior : MonoBehaviour
     #region VARIABLES
 
     [SerializeField] GameObject defaultModule;
+    public GameObject DefaultModule { get => defaultModule; }
     [SerializeField] GameObject[] visuals;
     private int currentVisual = 0;
+    public int CurrentVisual { get => currentVisual; }
 
     private bool buildingOverlap = false;
     public bool BuildingOverlap { get => buildingOverlap; }
@@ -21,6 +23,25 @@ public class ModuleBehavior : MonoBehaviour
     {
         isBuilt = true;
     }
+
+    public void ChangeVisuals(ModuleBehavior intakeToMimic)
+    {
+        if (intakeToMimic.DefaultModule.activeSelf)
+            return;
+        else
+        {
+            if (defaultModule.activeSelf)
+                defaultModule.SetActive(false);
+            else
+                visuals[currentVisual].SetActive(false);
+
+            currentVisual = intakeToMimic.CurrentVisual;
+            visuals[currentVisual].SetActive(true);
+        }
+    }
+
+
+
 
     public void ChangeVisuals(bool intake)
     {
