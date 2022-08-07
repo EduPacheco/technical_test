@@ -61,6 +61,11 @@ public class UIManager : MonoBehaviour
         creationPanel.SetActive(false);
     }
 
+    public void OnClick_ExitApplication()
+    {
+        Application.Quit();
+    }
+
     public void OnClick_SelectWallToBuild()
     {
         MouseTarget.instance.UpdatePrefabToBuild(wallPrefab);
