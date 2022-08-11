@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// User Interface Manager, has On click methods called from the buttons in the UI,
@@ -25,6 +26,11 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject doorPrefab;
     [SerializeField] private GameObject windowPrefab;
 
+    [SerializeField] private Text createText;
+    [SerializeField] private Text moveText;
+    [SerializeField] private Text customizeText;
+    [SerializeField] private Text demolishText;
+
     #endregion
 
     private void Start()
@@ -32,33 +38,65 @@ public class UIManager : MonoBehaviour
         OnClick_CreationMode();
     }
 
+    #region UI Management Methods
+
+    private void UpdateStateAndUI(GameState nextState)
+    {
+        creationPanel.SetActive(false);
+
+        MouseTarget.instance.UpdateMouseTargetFunctionality(nextState);
+
+        if (createText.enabled)
+            createText.enabled = false;
+        if (moveText.enabled)
+            moveText.enabled = false;
+        if (customizeText.enabled)
+            customizeText.enabled = false;
+        if (demolishText.enabled)
+            demolishText.enabled = false;
+
+        switch(nextState)
+        {
+            case GameState.CREATE:
+                createText.enabled = true;
+                creationPanel.SetActive(true);
+                break;
+
+            case GameState.MOVE:
+                moveText.enabled = true;
+                break;
+
+            case GameState.CUSTOMIZE:
+                customizeText.enabled = true;
+                break;
+
+            case GameState.DEMOLISH:
+                demolishText.enabled = true;
+                break;
+        }
+    }
+
+    #endregion
+
     #region OnClick_ButtonMethods
     public void OnClick_CreationMode()
     {
-        MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.CREATE);
-
-        creationPanel.SetActive(true);
+        UpdateStateAndUI(GameState.CREATE);      
     }
 
     public void OnClick_MoveMode()
     {
-        MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.MOVE);
-
-        creationPanel.SetActive(false);
-    }
-
-    public void OnClick_DemolishMode()
-    {
-        MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.DEMOLISH);
-
-        creationPanel.SetActive(false);
+        UpdateStateAndUI(GameState.MOVE); 
     }
 
     public void OnClick_CustomizeMode()
     {
-        MouseTarget.instance.UpdateMouseTargetFunctionality(GameState.CUSTOMIZE);
+        UpdateStateAndUI(GameState.CUSTOMIZE);
+    }
 
-        creationPanel.SetActive(false);
+    public void OnClick_DemolishMode()
+    {
+        UpdateStateAndUI(GameState.DEMOLISH);
     }
 
     public void OnClick_ExitApplication()

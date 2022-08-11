@@ -251,6 +251,7 @@ MonoBehaviour:
   - {fileID: 2015481416}
   - {fileID: 139146190}
   - {fileID: 1448034172}
+  moduleLerpDuration: 0.05
 --- !u!4 &170869282
 Transform:
   m_ObjectHideFlags: 0
