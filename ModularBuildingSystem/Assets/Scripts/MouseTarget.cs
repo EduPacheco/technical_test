@@ -31,8 +31,8 @@ public class MouseTarget : MonoBehaviour
 
     [SerializeField] private Camera mainCam;
 
-    [SerializeField] private LayerMask groundLayer;
-    [SerializeField] private LayerMask physicsLayer;
+    [SerializeField] private LayerMask gridLayer;
+    [SerializeField] private LayerMask modulesLayers;
     private LayerMask inUseLayerMask;
 
     [SerializeField] private GameObject[] pointers;
@@ -51,12 +51,15 @@ public class MouseTarget : MonoBehaviour
 
     private Vector3 editReturnPos;
     private Quaternion editReturnRot;
+
     private bool isLerpRotating = false;
 
     [SerializeField] private float moduleLerpDuration = .2f;
 
     private Vector3 previousPosition;
     #endregion
+
+    #region Core Methods
 
     /// <summary>
     /// Reset mouse cursor in game to default
@@ -131,6 +134,8 @@ public class MouseTarget : MonoBehaviour
         }
     }
 
+    #endregion
+
     #region Primary Methods - Create, Move, Customize, Demolish
 
     /// <summary>
@@ -183,14 +188,6 @@ public class MouseTarget : MonoBehaviour
                         return;
 
                     RotateModule(creationBuffer[0].transform);
-
-                    //creationBuffer[0].transform.position = transform.position; //Recently created follow mouse
-
-                    ////Rotate 90º with mouse scrollwheel
-                    //if (Input.GetAxis("Mouse ScrollWheel") > 0f)
-                    //    creationBuffer[0].transform.Rotate(0f, 90f, 0f);
-                    //else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
-                    //    creationBuffer[0].transform.Rotate(0f, -90f, 0f);
                 }
 
                 //Stop creation and finish building
@@ -220,15 +217,15 @@ public class MouseTarget : MonoBehaviour
 
             transform.position = snappingGrid;
 
-            if (inUseLayerMask != groundLayer)
-                inUseLayerMask = groundLayer;
+            if (inUseLayerMask != gridLayer)
+                inUseLayerMask = gridLayer;
         }
         else // Free movement
         {
             transform.position = target.point;
 
-            if (inUseLayerMask != physicsLayer)
-                inUseLayerMask = physicsLayer;
+            if (inUseLayerMask != modulesLayers)
+                inUseLayerMask = modulesLayers;
         }
 
         ModuleBehavior targetModule = target.transform.gameObject.GetComponent<ModuleBehavior>();
@@ -241,6 +238,7 @@ public class MouseTarget : MonoBehaviour
 
             isBeingEdited = targetModule;
             isBeingEdited.EditMode(true);
+
             editReturnPos = isBeingEdited.transform.position;
             editReturnRot = isBeingEdited.transform.rotation;
         }
@@ -250,16 +248,7 @@ public class MouseTarget : MonoBehaviour
 
         //Moves and rotates gameObject around
         if (Input.GetMouseButton(0))
-        {
             RotateModule(isBeingEdited.transform);
-
-            //isBeingEdited.transform.position = transform.position;
-
-            //if (Input.GetAxis("Mouse ScrollWheel") > 0f)
-            //    isBeingEdited.transform.Rotate(0f, 90f, 0f);
-            //else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
-            //    isBeingEdited.transform.Rotate(0f, -90f, 0f);
-        }
 
         //Resets gameObject position and rotation to its original transform before the editing
         if (Input.GetMouseButtonDown(1))//Mouse Right Click
@@ -338,9 +327,7 @@ public class MouseTarget : MonoBehaviour
 
         //Stop the hold and drag mass customaize
         if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
-        {
             isBeingEdited = null;
-        }
     }
 
     /// <summary>
@@ -362,6 +349,8 @@ public class MouseTarget : MonoBehaviour
 
     #endregion
 
+    #region Secundary Methods - Aids Primaries
+
     /// <summary>
     /// Create desired gameObject
     /// </summary>
@@ -380,7 +369,13 @@ public class MouseTarget : MonoBehaviour
         GameObject module = Instantiate(prefabModule, previousPosition, Quaternion.identity, null);
 
         if (!follow)//If it shouldn't follow the cursor around apply previously calculated direction
+        {
             module.transform.forward = dir;
+
+            if (Mathf.Abs(Vector3.Distance(targetPos, previousPosition)) > 1)
+                module.transform.localScale += new Vector3(.1f, 0, .4f);
+        }
+
 
         //Add to the creation array
         creationBuffer.Add(module);
@@ -405,22 +400,30 @@ public class MouseTarget : MonoBehaviour
         isCreating = t;
     }
 
+    /// <summary>
+    /// Calls coroutine to lerp rotation on target gameObject
+    /// </summary>
+    /// <param name="targetToRotate">GameObject to rotate</param>
     private void RotateModule(Transform targetToRotate)
     {
         targetToRotate.position = transform.position;
 
         if (Input.GetAxis("Mouse ScrollWheel") > 0f)
         {
-            StartCoroutine(LerpRotation(targetToRotate, 90f));
-            //targetToRotate.transform.Rotate(0f, 90f, 0f);
+            StartCoroutine(LerpRotation(targetToRotate, 45f));
         }
         else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
         {
-            //targetToRotate.transform.Rotate(0f, -90f, 0f);
-            StartCoroutine(LerpRotation(targetToRotate, -90f));
+            StartCoroutine(LerpRotation(targetToRotate, -45f));
         }
     }
 
+    /// <summary>
+    /// Lerp rotation motion
+    /// </summary>
+    /// <param name="t">Target GameObject</param>
+    /// <param name="angle">Rotating Angles</param>
+    /// <returns></returns>
     private IEnumerator LerpRotation(Transform t, float angle)
     {
         if (!isLerpRotating)
@@ -442,7 +445,6 @@ public class MouseTarget : MonoBehaviour
             isLerpRotating = false;
         }
     }
-
 
     /// <summary>
     /// Clears any modules inside the creation buffer that were created and stops creating
@@ -480,7 +482,9 @@ public class MouseTarget : MonoBehaviour
         }
     }
 
-    #region Script Settings Management
+    #endregion
+
+    #region Settings Management Methods
 
     /// <summary>
     /// Update which state the game is currently in, and update cursor to display it
@@ -501,14 +505,14 @@ public class MouseTarget : MonoBehaviour
         {
             case GameState.CREATE:
                 MouseReset();
-                inUseLayerMask = groundLayer;
+                inUseLayerMask = gridLayer;
                 break;
             case GameState.MOVE:
             case GameState.DEMOLISH:
             case GameState.CUSTOMIZE:
                 MouseReset();
                 UpdatePrefabToBuild(null);
-                inUseLayerMask = physicsLayer;
+                inUseLayerMask = modulesLayers;
                 break;
         }
     }
