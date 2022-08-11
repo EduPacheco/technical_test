@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -50,6 +51,9 @@ public class MouseTarget : MonoBehaviour
 
     private Vector3 editReturnPos;
     private Quaternion editReturnRot;
+    private bool isLerpRotating = false;
+
+    [SerializeField] private float moduleLerpDuration = .2f;
 
     private Vector3 previousPosition;
     #endregion
@@ -127,22 +131,7 @@ public class MouseTarget : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Force clear any creation operation on right mouse button release
-    /// </summary>
-    private void RightClickForceClear()
-    {
-        if (Input.GetMouseButtonDown(1))//Mouse Right Click
-        {
-            switch (currentBuildState)
-            {
-                case GameState.CREATE:
-                    //Clear any module created on previous creation click
-                    ClearCreationBuffer();
-                    break;
-            }
-        }
-    }
+    #region Primary Methods - Create, Move, Customize, Demolish
 
     /// <summary>
     /// Creates current prefab module, depending on the type of module, can create multiple or single gameObjects
@@ -190,17 +179,18 @@ public class MouseTarget : MonoBehaviour
 
                 if (Input.GetMouseButton(0))
                 {
-
                     if (creationBuffer.Count == 0)
                         return;
 
-                    creationBuffer[0].transform.position = transform.position; //Recently created follow mouse
+                    RotateModule(creationBuffer[0].transform);
 
-                    //Rotate 90º with mouse scrollwheel
-                    if (Input.GetAxis("Mouse ScrollWheel") > 0f)
-                        creationBuffer[0].transform.Rotate(0f, 90f, 0f);
-                    else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
-                        creationBuffer[0].transform.Rotate(0f, -90f, 0f);
+                    //creationBuffer[0].transform.position = transform.position; //Recently created follow mouse
+
+                    ////Rotate 90º with mouse scrollwheel
+                    //if (Input.GetAxis("Mouse ScrollWheel") > 0f)
+                    //    creationBuffer[0].transform.Rotate(0f, 90f, 0f);
+                    //else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
+                    //    creationBuffer[0].transform.Rotate(0f, -90f, 0f);
                 }
 
                 //Stop creation and finish building
@@ -214,49 +204,11 @@ public class MouseTarget : MonoBehaviour
     }
 
     /// <summary>
-    /// Clears any modules inside the creation buffer that were created and stops creating
-    /// </summary>
-    private void ClearCreationBuffer()
-    {
-        if (isCreating)
-        {
-            foreach (GameObject g in creationBuffer)
-            {
-                Destroy(g);
-            }
-
-            creationBuffer.Clear();
-        }
-
-        isCreating = false;
-        return;
-    }
-
-    /// <summary>
-    /// Start creating or Stop creating and build any modules in the creation Buffer
-    /// </summary>
-    /// <param name="t">Update if creating or not</param>
-    private void ToggleCreationMode(bool t)
-    {
-        if (isCreating)
-        {
-            foreach (GameObject g in creationBuffer)
-            {
-                if (g != null)
-                    g.GetComponent<ModuleBehavior>().Build();
-            }
-
-            creationBuffer.Clear();
-        }
-        isCreating = t;
-    }
-
-    /// <summary>
     /// Picks up desired gameObject, moves it around and rotates it
     /// </summary>
     /// <param name="target">Target module to edit position and rotation</param>
     private void MoveModulesMode(RaycastHit target)
-    {     
+    {
         if (isBeingEdited != null)//Snap to grid move if has anything picked up
         {
             Vector3 t = target.point;
@@ -293,18 +245,20 @@ public class MouseTarget : MonoBehaviour
             editReturnRot = isBeingEdited.transform.rotation;
         }
 
+        if (isBeingEdited == null)
+            return;
+
         //Moves and rotates gameObject around
         if (Input.GetMouseButton(0))
         {
-            if (isBeingEdited == null)
-                return;
+            RotateModule(isBeingEdited.transform);
 
-            isBeingEdited.transform.position = transform.position;
+            //isBeingEdited.transform.position = transform.position;
 
-            if (Input.GetAxis("Mouse ScrollWheel") > 0f)
-                isBeingEdited.transform.Rotate(0f, 90f, 0f);
-            else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
-                isBeingEdited.transform.Rotate(0f, -90f, 0f);
+            //if (Input.GetAxis("Mouse ScrollWheel") > 0f)
+            //    isBeingEdited.transform.Rotate(0f, 90f, 0f);
+            //else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
+            //    isBeingEdited.transform.Rotate(0f, -90f, 0f);
         }
 
         //Resets gameObject position and rotation to its original transform before the editing
@@ -322,7 +276,7 @@ public class MouseTarget : MonoBehaviour
         //Finishes editing and builds the gameObject again if not overlaping
         if (Input.GetMouseButtonUp(0))
         {
-            if(isBeingEdited != null && isBeingEdited.BuildingOverlap)
+            if (isBeingEdited.BuildingOverlap)
             {
                 isBeingEdited.transform.position = editReturnPos;
                 isBeingEdited.transform.rotation = editReturnRot;
@@ -406,11 +360,14 @@ public class MouseTarget : MonoBehaviour
         }
     }
 
+    #endregion
+
     /// <summary>
     /// Create desired gameObject
     /// </summary>
     /// <param name="targetPos">Position to be facing</param>
     /// <param name="follow">Shoud it follow the cursor around or stay in place when created</param>
+    ///
     private void CreateModule(Vector3 targetPos, bool follow)
     {
         //Calculate direction the cursor is facing
@@ -428,6 +385,102 @@ public class MouseTarget : MonoBehaviour
         //Add to the creation array
         creationBuffer.Add(module);
     }
+
+    /// <summary>
+    /// Start creating or Stop creating and build any modules in the creation Buffer
+    /// </summary>
+    /// <param name="t">Update if creating or not</param>
+    private void ToggleCreationMode(bool t)
+    {
+        if (isCreating)
+        {
+            foreach (GameObject g in creationBuffer)
+            {
+                if (g != null)
+                    g.GetComponent<ModuleBehavior>().Build();
+            }
+
+            creationBuffer.Clear();
+        }
+        isCreating = t;
+    }
+
+    private void RotateModule(Transform targetToRotate)
+    {
+        targetToRotate.position = transform.position;
+
+        if (Input.GetAxis("Mouse ScrollWheel") > 0f)
+        {
+            StartCoroutine(LerpRotation(targetToRotate, 90f));
+            //targetToRotate.transform.Rotate(0f, 90f, 0f);
+        }
+        else if (Input.GetAxis("Mouse ScrollWheel") < 0f)
+        {
+            //targetToRotate.transform.Rotate(0f, -90f, 0f);
+            StartCoroutine(LerpRotation(targetToRotate, -90f));
+        }
+    }
+
+    private IEnumerator LerpRotation(Transform t, float angle)
+    {
+        if (!isLerpRotating)
+        {
+            isLerpRotating = true;
+
+            float timeElapsed = 0;
+
+            Quaternion q = t.rotation * Quaternion.Euler(0f, angle, 0f);
+
+            while (timeElapsed < moduleLerpDuration)
+            {
+                t.rotation = Quaternion.Slerp(t.rotation, q, timeElapsed / moduleLerpDuration);
+                timeElapsed += Time.deltaTime;
+                yield return null;
+            }
+            t.rotation = q;
+
+            isLerpRotating = false;
+        }
+    }
+
+
+    /// <summary>
+    /// Clears any modules inside the creation buffer that were created and stops creating
+    /// </summary>
+    private void ClearCreationBuffer() //Should be removed?, only one instance of the method
+    {
+        if (isCreating)
+        {
+            foreach (GameObject g in creationBuffer)
+            {
+                Destroy(g);
+            }
+
+            creationBuffer.Clear();
+        }
+
+        isCreating = false;
+        return;
+    }
+
+    /// <summary>
+    /// Force clear any creation operation on right mouse button release
+    /// </summary>
+    private void RightClickForceClear() //Should be removed?, only one instance of the method
+    {
+        if (Input.GetMouseButtonDown(1))//Mouse Right Click
+        {
+            switch (currentBuildState)
+            {
+                case GameState.CREATE:
+                    //Clear any module created on previous creation click
+                    ClearCreationBuffer();
+                    break;
+            }
+        }
+    }
+
+    #region Script Settings Management
 
     /// <summary>
     /// Update which state the game is currently in, and update cursor to display it
@@ -477,7 +530,9 @@ public class MouseTarget : MonoBehaviour
     {
         prefabModule = p;
 
-        if(p != null)
+        if (p != null)
             currentModuleType = prefabModule.GetComponent<ModuleBehavior>().MyType;
     }
+
+    #endregion
 }
